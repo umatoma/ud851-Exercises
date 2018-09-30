@@ -30,6 +30,7 @@ import com.example.android.todolist.database.AppDatabase;
 import com.example.android.todolist.database.TaskEntry;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import static android.support.v7.widget.DividerItemDecoration.VERTICAL;
 
@@ -76,14 +77,24 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
 
             // Called when a user swipes left or right on a ViewHolder
             @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int swipeDir) {
+            public void onSwiped(final RecyclerView.ViewHolder viewHolder, int swipeDir) {
                 // Here is where you'll implement swipe to delete
-                // TODO (1) Get the diskIO Executor from the instance of AppExecutors and
+                // DONE (1) Get the diskIO Executor from the instance of AppExecutors and
                 // call the diskIO execute method with a new Runnable and implement its run method
+                Executor executor = AppExecutors.getInstance().diskIO();
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        // DONE (3) get the position from the viewHolder parameter
+                        // DONE (4) Call deleteTask in the taskDao with the task at that position
+                        // DONE (6) Call retrieveTasks method to refresh the UI
+                        int position = viewHolder.getAdapterPosition();
+                        TaskEntry taskEntry = mAdapter.getTasks().get(position);
+                        mDb.taskDao().deleteTask(taskEntry);
+                        retrieveTasks();
+                    }
+                });
 
-                // TODO (3) get the position from the viewHolder parameter
-                // TODO (4) Call deleteTask in the taskDao with the task at that position
-                // TODO (6) Call retrieveTasks method to refresh the UI
             }
         }).attachToRecyclerView(mRecyclerView);
 
@@ -114,7 +125,11 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.ItemC
     @Override
     protected void onResume() {
         super.onResume();
-        // TODO (5) Extract the logic to a retrieveTasks method so it can be reused
+        // DONE (5) Extract the logic to a retrieveTasks method so it can be reused
+        retrieveTasks();
+    }
+
+    private void retrieveTasks() {
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
